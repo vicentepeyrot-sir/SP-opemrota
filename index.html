@@ -1,1231 +1,1563 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PlanejamentoSP — Validador de Notas</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-  :root {
-    --bg: #0d0f14;
-    --surface: #151820;
-    --surface2: #1d2230;
-    --border: #2a3040;
-    --accent: #00e5a0;
-    --accent2: #ff6b35;
-    --accent3: #4d8cff;
-    --warn: #f5c518;
-    --text: #e8eaf0;
-    --muted: #5a6070;
-    --red: #ff4560;
-    --green: #00e5a0;
-    --yellow: #f5c518;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlanejamentoSP — Validador de Notas</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #151820;
+      --surface2: #1d2230;
+      --border: #2a3040;
+      --accent: #00e5a0;
+      --accent2: #ff6b35;
+      --accent3: #4d8cff;
+      --warn: #f5c518;
+      --text: #e8eaf0;
+      --muted: #5a6070;
+      --red: #ff4560;
+      --green: #00e5a0;
+      --yellow: #f5c518;
+    }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  /* ── GRID BACKGROUND ── */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-  /* ── HEADER ── */
-  header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: rgba(13,15,20,0.95);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 32px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+    /* ── GRID BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0, 229, 160, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 229, 160, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-  .logo {
-    font-family: 'Syne', sans-serif;
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    color: var(--text);
-  }
-  .logo span { color: var(--accent); }
+    /* ── HEADER ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13, 15, 20, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-  .badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    background: rgba(0,229,160,0.1);
-    border: 1px solid rgba(0,229,160,0.3);
-    color: var(--accent);
-    padding: 3px 10px;
-    border-radius: 3px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
 
-  /* ── LAYOUT ── */
-  .wrap {
-    position: relative;
-    z-index: 1;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 32px;
-  }
+    .logo span {
+      color: var(--accent);
+    }
 
-  /* ── TABS ── */
-  .tabs {
-    display: flex;
-    gap: 2px;
-    margin-bottom: 28px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 4px;
-    width: fit-content;
-  }
-  .tab {
-    padding: 8px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 13px;
-    color: var(--muted);
-    transition: all 0.2s;
-    border: none;
-    background: none;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .tab.active {
-    background: var(--surface2);
-    color: var(--text);
-    box-shadow: 0 0 0 1px var(--border);
-  }
-  .tab:hover:not(.active) { color: var(--text); }
+    .badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      background: rgba(0, 229, 160, 0.1);
+      border: 1px solid rgba(0, 229, 160, 0.3);
+      color: var(--accent);
+      padding: 3px 10px;
+      border-radius: 3px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
 
-  /* ── PANELS ── */
-  .panel { display: none; }
-  .panel.active { display: block; }
+    /* ── LAYOUT ── */
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px;
+    }
 
-  /* ── UPLOAD ZONE ── */
-  .upload-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-  }
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+      width: fit-content;
+    }
 
-  .drop-zone {
-    background: var(--surface);
-    border: 2px dashed var(--border);
-    border-radius: 10px;
-    padding: 28px 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.25s;
-    position: relative;
-  }
-  .drop-zone:hover, .drop-zone.dragover {
-    border-color: var(--accent);
-    background: rgba(0,229,160,0.04);
-  }
-  .drop-zone.loaded {
-    border-color: rgba(0,229,160,0.5);
-    background: rgba(0,229,160,0.06);
-  }
-  .drop-zone input[type=file] {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-    width: 100%;
-    height: 100%;
-  }
-  .drop-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 10px;
-  }
-  .drop-icon {
-    font-size: 32px;
-    margin-bottom: 10px;
-    display: block;
-  }
-  .drop-name {
-    font-size: 13px;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .drop-name.loaded { color: var(--accent); }
+    .tab {
+      padding: 8px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--muted);
+      transition: all 0.2s;
+      border: none;
+      background: none;
+      font-family: 'DM Sans', sans-serif;
+    }
 
-  /* ── BUTTONS ── */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 22px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.2s;
-    letter-spacing: 0.2px;
-  }
-  .btn-primary {
-    background: var(--accent);
-    color: #000;
-  }
-  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-  .btn-secondary {
-    background: var(--surface2);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-  .btn-secondary:hover { border-color: var(--accent); }
-  .btn-danger {
-    background: rgba(255,69,96,0.15);
-    color: var(--red);
-    border: 1px solid rgba(255,69,96,0.3);
-  }
-  .btn-danger:hover { background: rgba(255,69,96,0.25); }
+    .tab.active {
+      background: var(--surface2);
+      color: var(--text);
+      box-shadow: 0 0 0 1px var(--border);
+    }
 
-  .btn-group {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 24px;
-    align-items: center;
-  }
+    .tab:hover:not(.active) {
+      color: var(--text);
+    }
 
-  /* ── PROGRESS ── */
-  .progress-wrap {
-    display: none;
-    margin-bottom: 20px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px 20px;
-  }
-  .progress-wrap.show { display: block; }
-  .progress-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 8px;
-    letter-spacing: 1px;
-  }
-  .progress-bar-wrap {
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  .progress-bar {
-    height: 100%;
-    background: var(--accent);
-    width: 0%;
-    transition: width 0.3s;
-    border-radius: 2px;
-    box-shadow: 0 0 10px rgba(0,229,160,0.5);
-  }
+    /* ── PANELS ── */
+    .panel {
+      display: none;
+    }
 
-  /* ── STATS ROW ── */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px 18px;
-  }
-  .stat-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 6px;
-  }
-  .stat-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 28px;
-    font-weight: 700;
-    line-height: 1;
-  }
-  .stat-value.green { color: var(--green); }
-  .stat-value.red { color: var(--red); }
-  .stat-value.yellow { color: var(--yellow); }
-  .stat-value.blue { color: var(--accent3); }
+    .panel.active {
+      display: block;
+    }
 
-  /* ── TABLE ── */
-  .table-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  .table-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  .table-title {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .search-box {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    padding: 6px 12px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    width: 220px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .search-box:focus { border-color: var(--accent); }
-  .search-box::placeholder { color: var(--muted); }
+    /* ── UPLOAD ZONE ── */
+    .upload-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
 
-  .filter-row {
-    display: flex;
-    gap: 8px;
-    padding: 10px 18px;
-    border-bottom: 1px solid var(--border);
-    flex-wrap: wrap;
-  }
-  .filter-chip {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    padding: 4px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    transition: all 0.15s;
-    letter-spacing: 0.5px;
-  }
-  .filter-chip.active { background: rgba(0,229,160,0.12); border-color: var(--accent); color: var(--accent); }
-  .filter-chip.red-chip.active { background: rgba(255,69,96,0.12); border-color: var(--red); color: var(--red); }
-  .filter-chip.yellow-chip.active { background: rgba(245,197,24,0.12); border-color: var(--yellow); color: var(--yellow); }
+    .drop-zone {
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 28px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s;
+      position: relative;
+    }
 
-  .tbl-scroll { overflow: auto; max-height: 480px; }
-  table { width: 100%; border-collapse: collapse; }
-  thead th {
-    background: rgba(0,0,0,0.3);
-    padding: 10px 12px;
-    text-align: left;
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-    white-space: nowrap;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    border-bottom: 1px solid var(--border);
-  }
-  tbody tr {
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-    transition: background 0.1s;
-  }
-  tbody tr:hover { background: rgba(255,255,255,0.03); }
-  tbody td {
-    padding: 8px 12px;
-    font-size: 12px;
-    vertical-align: middle;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+    .drop-zone:hover,
+    .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(0, 229, 160, 0.04);
+    }
 
-  .pill {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-  }
-  .pill-green { background: rgba(0,229,160,0.12); color: var(--green); }
-  .pill-red { background: rgba(255,69,96,0.12); color: var(--red); }
-  .pill-yellow { background: rgba(245,197,24,0.12); color: var(--yellow); }
-  .pill-blue { background: rgba(77,140,255,0.12); color: var(--accent3); }
+    .drop-zone.loaded {
+      border-color: rgba(0, 229, 160, 0.5);
+      background: rgba(0, 229, 160, 0.06);
+    }
 
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-  }
-  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .drop-zone input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
 
-  /* ── SECTION TITLE ── */
-  .section-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 6px;
-    color: var(--text);
-  }
-  .section-sub {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 24px;
-  }
+    .drop-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
 
-  /* ── LOG ── */
-  .log-box {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    max-height: 200px;
-    overflow-y: auto;
-    line-height: 1.8;
-    margin-top: 12px;
-  }
-  .log-ok { color: var(--green); }
-  .log-warn { color: var(--yellow); }
-  .log-err { color: var(--red); }
-  .log-info { color: var(--accent3); }
+    .drop-icon {
+      font-size: 32px;
+      margin-bottom: 10px;
+      display: block;
+    }
 
-  /* ── OPORTUNIDADE TABLE ── */
-  .oport-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-  @media (max-width: 900px) { .oport-grid { grid-template-columns: 1fr; } }
+    .drop-name {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-  /* ── EXPORT ── */
-  .export-area {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 24px;
-    margin-top: 20px;
-  }
+    .drop-name.loaded {
+      color: var(--accent);
+    }
 
-  /* ── SCROLLBAR ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+      letter-spacing: 0.2px;
+    }
 
-  /* ── ANIMATIONS ── */
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  .panel.active { animation: fadeIn 0.2s ease; }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-  .loading { animation: pulse 1s infinite; }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
 
-  .sep { height: 1px; background: var(--border); margin: 20px 0; }
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
 
-  .help-text {
-    background: rgba(77,140,255,0.06);
-    border: 1px solid rgba(77,140,255,0.2);
-    border-radius: 6px;
-    padding: 12px 16px;
-    font-size: 12px;
-    color: #7aadff;
-    line-height: 1.6;
-    margin-bottom: 16px;
-  }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
 
-  .row-deleted { opacity: 0.5; }
-  .row-deleted td { text-decoration: line-through; }
-</style>
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+    }
+
+    .btn-danger {
+      background: rgba(255, 69, 96, 0.15);
+      color: var(--red);
+      border: 1px solid rgba(255, 69, 96, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: rgba(255, 69, 96, 0.25);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      align-items: center;
+    }
+
+    /* ── PROGRESS ── */
+    .progress-wrap {
+      display: none;
+      margin-bottom: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+    }
+
+    .progress-wrap.show {
+      display: block;
+    }
+
+    .progress-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .progress-bar-wrap {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.3s;
+      border-radius: 2px;
+      box-shadow: 0 0 10px rgba(0, 229, 160, 0.5);
+    }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+    }
+
+    .stat-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-value.green {
+      color: var(--green);
+    }
+
+    .stat-value.red {
+      color: var(--red);
+    }
+
+    .stat-value.yellow {
+      color: var(--yellow);
+    }
+
+    .stat-value.blue {
+      color: var(--accent3);
+    }
+
+    /* ── TABLE ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .table-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .search-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 6px 12px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      width: 220px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box:focus {
+      border-color: var(--accent);
+    }
+
+    .search-box::placeholder {
+      color: var(--muted);
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      padding: 4px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+    }
+
+    .filter-chip.active {
+      background: rgba(0, 229, 160, 0.12);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .filter-chip.red-chip.active {
+      background: rgba(255, 69, 96, 0.12);
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .filter-chip.yellow-chip.active {
+      background: rgba(245, 197, 24, 0.12);
+      border-color: var(--yellow);
+      color: var(--yellow);
+    }
+
+    .tbl-scroll {
+      overflow: auto;
+      max-height: 480px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px 12px;
+      text-align: left;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      transition: background 0.1s;
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    tbody td {
+      padding: 8px 12px;
+      font-size: 12px;
+      vertical-align: middle;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .pill-green {
+      background: rgba(0, 229, 160, 0.12);
+      color: var(--green);
+    }
+
+    .pill-red {
+      background: rgba(255, 69, 96, 0.12);
+      color: var(--red);
+    }
+
+    .pill-yellow {
+      background: rgba(245, 197, 24, 0.12);
+      color: var(--yellow);
+    }
+
+    .pill-blue {
+      background: rgba(77, 140, 255, 0.12);
+      color: var(--accent3);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .section-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    /* ── LOG ── */
+    .log-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      max-height: 200px;
+      overflow-y: auto;
+      line-height: 1.8;
+      margin-top: 12px;
+    }
+
+    .log-ok {
+      color: var(--green);
+    }
+
+    .log-warn {
+      color: var(--yellow);
+    }
+
+    .log-err {
+      color: var(--red);
+    }
+
+    .log-info {
+      color: var(--accent3);
+    }
+
+    /* ── OPORTUNIDADE TABLE ── */
+    .oport-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .oport-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ── EXPORT ── */
+    .export-area {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      margin-top: 20px;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--muted);
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .panel.active {
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .loading {
+      animation: pulse 1s infinite;
+    }
+
+    .sep {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    .help-text {
+      background: rgba(77, 140, 255, 0.06);
+      border: 1px solid rgba(77, 140, 255, 0.2);
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: #7aadff;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .row-deleted {
+      opacity: 0.5;
+    }
+
+    .row-deleted td {
+      text-decoration: line-through;
+    }
+  </style>
 </head>
+
 <body>
 
-<header>
-  <div class="logo">Sirtec <span>Planejamento</span> SP</div>
-  <div class="badge">v2026 · CPFL</div>
-</header>
+  <header>
+    <div class="logo">Sirtec <span>Planejamento</span> SP</div>
+    <div class="badge">v2026 · CPFL</div>
+  </header>
 
-<div class="wrap">
+  <div class="wrap">
 
-  <!-- TABS -->
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('upload')">① Carregar Arquivos</button>
-    <button class="tab" onclick="switchTab('validar')">② Validar Notas</button>
-    <button class="tab" onclick="switchTab('dash')">③ DASH / Cancelamentos</button>
-    <button class="tab" onclick="switchTab('oport')">④ Oportunidade em Rota</button>
-    <button class="tab" onclick="switchTab('export')">⑤ Exportar</button>
-  </div>
-
-  <!-- ────────────────────────────────── PANEL 1: UPLOAD -->
-  <div class="panel active" id="panel-upload">
-    <div class="section-title">Carregar Arquivos</div>
-    <div class="section-sub">Arraste ou clique para selecionar os arquivos necessários para o processamento.</div>
-
-    <div class="help-text">
-      💡 <strong>Como funciona:</strong> este sistema replica as macros <code>ValidarNotas</code>, <code>ColarNasDASH</code> e <code>GerarOportunidadesEPlanejamento</code> do <code>PlanejamentoSP_v2026.xlsm</code>. Você pode carregar o próprio .xlsm ou os arquivos separados.
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('upload')">① Carregar Arquivos</button>
+      <button class="tab" onclick="switchTab('validar')">② Validar Notas</button>
+      <button class="tab" onclick="switchTab('dash')">③ DASH / Cancelamentos</button>
+      <button class="tab" onclick="switchTab('oport')">④ Oportunidade em Rota</button>
+      <button class="tab" onclick="switchTab('export')">⑤ Exportar</button>
     </div>
 
-    <div class="upload-grid">
-      <div class="drop-zone" id="zone-xlsm">
-        <input type="file" accept=".xlsm,.xlsx" onchange="loadMainFile(this)">
-        <span class="drop-icon">📊</span>
-        <div class="drop-label">Planilha Principal</div>
-        <div class="drop-name" id="name-xlsm">PlanejamentoSP_v2026.xlsm</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Contém: OFS_Abertas + BD_Sirtec + Planejamento</div>
+    <!-- ────────────────────────────────── PANEL 1: UPLOAD -->
+    <div class="panel active" id="panel-upload">
+      <div class="section-title">Carregar Arquivos</div>
+      <div class="section-sub">Arraste ou clique para selecionar os arquivos necessários para o processamento.</div>
+
+      <div class="help-text">
+        💡 <strong>Como funciona:</strong> este sistema replica as macros <code>ValidarNotas</code>,
+        <code>ColarNasDASH</code> e <code>GerarOportunidadesEPlanejamento</code> do
+        <code>PlanejamentoSP_v2026.xlsm</code>. Você pode carregar o próprio .xlsm ou os arquivos separados.
       </div>
 
-      <div class="drop-zone" id="zone-ofs">
-        <input type="file" accept=".xlsx,.xlsm,.csv" onchange="loadFile(this,'ofs')">
-        <span class="drop-icon">📋</span>
-        <div class="drop-label">OFS Abertas (opcional)</div>
-        <div class="drop-name" id="name-ofs">Exportação GPM / BSMART</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Substitui a aba OFS_Abertas</div>
-      </div>
-
-      <div class="drop-zone" id="zone-bd">
-        <input type="file" accept=".xlsx,.xlsm,.csv" onchange="loadFile(this,'bd')">
-        <span class="drop-icon">🗄️</span>
-        <div class="drop-label">BD Sirtec (opcional)</div>
-        <div class="drop-name" id="name-bd">Base de dados Sirtec</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Substitui a aba BD_Sirtec</div>
-      </div>
-
-      <div class="drop-zone" id="zone-bi">
-        <input type="file" accept=".xlsx,.xlsm,.csv" onchange="loadFile(this,'bi')">
-        <span class="drop-icon">📈</span>
-        <div class="drop-label">BI Exec (opcional)</div>
-        <div class="drop-name" id="name-bi">Executadas BI</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Substitui a aba BI_Exec</div>
-      </div>
-
-      <div class="drop-zone" id="zone-plano">
-        <input type="file" accept=".xlsx,.xlsm,.csv" onchange="loadFile(this,'plano')">
-        <span class="drop-icon">📅</span>
-        <div class="drop-label">Planejamento (opcional)</div>
-        <div class="drop-name" id="name-plano">Aba Planejamento</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Para cruzamento geográfico de equipes</div>
-      </div>
-    </div>
-
-    <div class="btn-group">
-      <button class="btn btn-primary" id="btn-process" onclick="processAll()" disabled>
-        ▶ Processar Tudo
-      </button>
-      <button class="btn btn-secondary" onclick="clearAll()">✕ Limpar</button>
-    </div>
-
-    <div class="progress-wrap" id="prog-wrap">
-      <div class="progress-label" id="prog-label">PROCESSANDO...</div>
-      <div class="progress-bar-wrap">
-        <div class="progress-bar" id="prog-bar"></div>
-      </div>
-    </div>
-
-    <div class="log-box" id="log-box">
-      <span class="log-info">// Aguardando arquivos...</span>
-    </div>
-  </div>
-
-  <!-- ────────────────────────────────── PANEL 2: VALIDAR NOTAS -->
-  <div class="panel" id="panel-validar">
-    <div class="section-title">Validação de Notas</div>
-    <div class="section-sub">Cruzamento OFS_Abertas × BD_Sirtec — equivalente à macro <code>ValidarNotas</code></div>
-
-    <div class="stats-row" id="stats-validar">
-      <div class="stat-card"><div class="stat-label">Total OFS</div><div class="stat-value blue" id="sv-total">—</div></div>
-      <div class="stat-card"><div class="stat-label">Validadas (OK)</div><div class="stat-value green" id="sv-ok">—</div></div>
-      <div class="stat-card"><div class="stat-label">Divergentes</div><div class="stat-value red" id="sv-div">—</div></div>
-      <div class="stat-card"><div class="stat-label">Não encontradas</div><div class="stat-value yellow" id="sv-nf">—</div></div>
-      <div class="stat-card"><div class="stat-label">UC Duplicadas</div><div class="stat-value yellow" id="sv-dup">—</div></div>
-    </div>
-
-    <div class="btn-group">
-      <input class="search-box" placeholder="Buscar UC, OS, Nome..." id="search-validar" oninput="filterTable('validar')">
-    </div>
-
-    <div class="table-wrap">
-      <div class="table-header">
-        <span class="table-title">Resultado da Validação</span>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="filter-chip active" data-filter-val="all" onclick="setFilter('validar','all',this)">TODOS</button>
-          <button class="filter-chip active red-chip" data-filter-val="DIVERGENTE" onclick="setFilter('validar','DIVERGENTE',this)">DIVERGENTES</button>
-          <button class="filter-chip yellow-chip" data-filter-val="NAO_BD" onclick="setFilter('validar','NAO_BD',this)">SEM BD</button>
-          <button class="filter-chip" data-filter-val="OK" onclick="setFilter('validar','OK',this)">OK</button>
-          <button class="filter-chip yellow-chip" data-filter-val="DUPLICADA" onclick="setFilter('validar','DUPLICADA',this)">DUPLICADA</button>
-        </div>
-      </div>
-      <div class="tbl-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>STATUS</th>
-              <th>NRO UC</th>
-              <th>OS</th>
-              <th>TIPO NOTA</th>
-              <th>RECURSO</th>
-              <th>FIM SLA</th>
-              <th>BD? (deviceName)</th>
-              <th>BI EXEC?</th>
-              <th>OBS</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-validar">
-            <tr><td colspan="9" class="empty-state"><div class="empty-icon">📂</div>Carregue os arquivos para iniciar a validação</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ────────────────────────────────── PANEL 3: DASH -->
-  <div class="panel" id="panel-dash">
-    <div class="section-title">DASH 2 — Cancelamentos</div>
-    <div class="section-sub">Equivalente à macro <code>ColarNasDASH</code> — notas produtivas, a gerar e UCs duplicadas</div>
-
-    <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">Notas Produtivas</div><div class="stat-value red" id="sd-prod">—</div></div>
-      <div class="stat-card"><div class="stat-label">Falta Gerar</div><div class="stat-value yellow" id="sd-falta">—</div></div>
-      <div class="stat-card"><div class="stat-label">UC Duplicada</div><div class="stat-value yellow" id="sd-dup">—</div></div>
-    </div>
-
-    <div class="oport-grid">
-      <div>
-        <div class="table-wrap">
-          <div class="table-header">
-            <span class="table-title" style="color:var(--red)">NOTAS PRODUTIVAS — CANCELAR OFS</span>
-          </div>
-          <div class="tbl-scroll" style="max-height:320px;">
-            <table>
-              <thead><tr><th>UC</th><th>OS</th><th>TIPO</th><th>RECURSO</th></tr></thead>
-              <tbody id="tbody-prod"><tr><td colspan="4" class="empty-state">—</td></tr></tbody>
-            </table>
+      <div class="upload-grid">
+        <div class="drop-zone" id="zone-xlsm">
+          <input type="file" accept=".xlsm,.xlsx" onchange="loadMainFile(this)">
+          <span class="drop-icon">📊</span>
+          <div class="drop-label">Planilha Principal</div>
+          <div class="drop-name" id="name-xlsm">PlanejamentoSP_v2026.xlsm</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">Contém: OFS_Abertas + BD_Sirtec + Planejamento
           </div>
         </div>
+
+        <div class="drop-zone" id="zone-ofs">
+          <input type="file" accept=".xlsx,.xlsm,.csv" onchange="loadFile(this,'ofs')">
+          <span class="drop-icon">📋</span>
+          <div class="drop-label">OFS Abertas (opcional)</div>
+          <div class="drop-name" id="name-ofs">Exportação GPM / BSMART</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">Substitui a aba OFS_Abertas</div>
+        </div>
+
+        <div class="drop-zone" id="zone-bd">
+          <input type="file" accept=".xlsx,.xlsm,.csv" onchange="loadFile(this,'bd')">
+          <span class="drop-icon">🗄️</span>
+          <div class="drop-label">BD Sirtec (opcional)</div>
+          <div class="drop-name" id="name-bd">Base de dados Sirtec</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">Substitui a aba BD_Sirtec</div>
+        </div>
+
+        <div class="drop-zone" id="zone-bi">
+          <input type="file" accept=".xlsx,.xlsm,.csv" onchange="loadFile(this,'bi')">
+          <span class="drop-icon">📈</span>
+          <div class="drop-label">BI Exec (opcional)</div>
+          <div class="drop-name" id="name-bi">Executadas BI</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">Substitui a aba BI_Exec</div>
+        </div>
+
+        <div class="drop-zone" id="zone-plano">
+          <input type="file" accept=".xlsx,.xlsm,.csv" onchange="loadFile(this,'plano')">
+          <span class="drop-icon">📅</span>
+          <div class="drop-label">Planejamento (opcional)</div>
+          <div class="drop-name" id="name-plano">Aba Planejamento</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">Para cruzamento geográfico de equipes</div>
+        </div>
       </div>
-      <div>
-        <div class="table-wrap">
-          <div class="table-header">
-            <span class="table-title" style="color:var(--yellow)">FALTA GERAR</span>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btn-process" onclick="processAll()" disabled>
+          ▶ Processar Tudo
+        </button>
+        <button class="btn btn-secondary" onclick="clearAll()">✕ Limpar</button>
+      </div>
+
+      <div class="progress-wrap" id="prog-wrap">
+        <div class="progress-label" id="prog-label">PROCESSANDO...</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="prog-bar"></div>
+        </div>
+      </div>
+
+      <div class="log-box" id="log-box">
+        <span class="log-info">// Aguardando arquivos...</span>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────── PANEL 2: VALIDAR NOTAS -->
+    <div class="panel" id="panel-validar">
+      <div class="section-title">Validação de Notas</div>
+      <div class="section-sub">Cruzamento OFS_Abertas × BD_Sirtec — equivalente à macro <code>ValidarNotas</code></div>
+
+      <div class="stats-row" id="stats-validar">
+        <div class="stat-card">
+          <div class="stat-label">Total OFS</div>
+          <div class="stat-value blue" id="sv-total">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Validadas (OK)</div>
+          <div class="stat-value green" id="sv-ok">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Divergentes</div>
+          <div class="stat-value red" id="sv-div">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Não encontradas</div>
+          <div class="stat-value yellow" id="sv-nf">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">UC Duplicadas</div>
+          <div class="stat-value yellow" id="sv-dup">—</div>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <input class="search-box" placeholder="Buscar UC, OS, Nome..." id="search-validar"
+          oninput="filterTable('validar')">
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title">Resultado da Validação</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="filter-chip active" data-filter-val="all"
+              onclick="setFilter('validar','all',this)">TODOS</button>
+            <button class="filter-chip active red-chip" data-filter-val="DIVERGENTE"
+              onclick="setFilter('validar','DIVERGENTE',this)">DIVERGENTES</button>
+            <button class="filter-chip yellow-chip" data-filter-val="NAO_BD"
+              onclick="setFilter('validar','NAO_BD',this)">SEM BD</button>
+            <button class="filter-chip" data-filter-val="OK" onclick="setFilter('validar','OK',this)">OK</button>
+            <button class="filter-chip yellow-chip" data-filter-val="DUPLICADA"
+              onclick="setFilter('validar','DUPLICADA',this)">DUPLICADA</button>
           </div>
-          <div class="tbl-scroll" style="max-height:320px;">
-            <table>
-              <thead><tr><th>UC</th><th>STATUS</th></tr></thead>
-              <tbody id="tbody-falta"><tr><td colspan="3" class="empty-state">—</td></tr></tbody>
-            </table>
-          </div>
+        </div>
+        <div class="tbl-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>STATUS</th>
+                <th>NRO UC</th>
+                <th>OS</th>
+                <th>TIPO NOTA</th>
+                <th>RECURSO</th>
+                <th>FIM SLA</th>
+                <th>BD? (deviceName)</th>
+                <th>BI EXEC?</th>
+                <th>OBS</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-validar">
+              <tr>
+                <td colspan="9" class="empty-state">
+                  <div class="empty-icon">📂</div>Carregue os arquivos para iniciar a validação
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
 
-    <div class="sep"></div>
+    <!-- ────────────────────────────────── PANEL 3: DASH -->
+    <div class="panel" id="panel-dash">
+      <div class="section-title">DASH 2 — Cancelamentos</div>
+      <div class="section-sub">Equivalente à macro <code>ColarNasDASH</code> — notas produtivas, a gerar e UCs
+        duplicadas</div>
 
-    <div class="table-wrap">
-      <div class="table-header">
-        <span class="table-title" style="color:var(--yellow)">UC DUPLICADA — CANCELAR</span>
-        <input class="search-box" placeholder="Buscar UC..." id="search-dup" oninput="filterTable('dup')">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Notas Produtivas</div>
+          <div class="stat-value red" id="sd-prod">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Falta Gerar</div>
+          <div class="stat-value yellow" id="sd-falta">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">UC Duplicada</div>
+          <div class="stat-value yellow" id="sd-dup">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Retirar da Programação</div>
+          <div class="stat-value red" id="sd-retirar">—</div>
+        </div>
       </div>
-      <div class="tbl-scroll">
-        <table>
-          <thead><tr><th>UC</th><th>OS</th><th>IDENTIFICADOR</th><th>AÇÃO</th></tr></thead>
-          <tbody id="tbody-dup"><tr><td colspan="4" class="empty-state">—</td></tr></tbody>
-        </table>
+
+      <div class="oport-grid">
+        <div>
+          <div class="table-wrap">
+            <div class="table-header">
+              <span class="table-title" style="color:var(--red)">NOTAS PRODUTIVAS — CANCELAR OFS</span>
+            </div>
+            <div class="tbl-scroll" style="max-height:320px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>UC</th>
+                    <th>OS</th>
+                    <th>TIPO</th>
+                    <th>RECURSO</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-prod">
+                  <tr>
+                    <td colspan="4" class="empty-state">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="table-wrap">
+            <div class="table-header">
+              <span class="table-title" style="color:var(--yellow)">FALTA GERAR</span>
+            </div>
+            <div class="tbl-scroll" style="max-height:320px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>UC</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-falta">
+                  <tr>
+                    <td colspan="3" class="empty-state">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="oport-grid">
+        <div>
+          <div class="table-wrap">
+            <div class="table-header">
+              <span class="table-title" style="color:var(--yellow)">UC DUPLICADA — CANCELAR</span>
+              <input class="search-box" placeholder="Buscar UC..." id="search-dup" oninput="filterTable('dup')">
+            </div>
+            <div class="tbl-scroll" style="max-height:320px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>UC</th>
+                    <th>OS</th>
+                    <th>IDENTIFICADOR</th>
+                    <th>AÇÃO</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-dup">
+                  <tr>
+                    <td colspan="4" class="empty-state">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="table-wrap">
+            <div class="table-header">
+              <span class="table-title" style="color:var(--red)">RETIRAR DA PROGRAMAÇÃO — CANCELAR</span>
+            </div>
+            <div class="tbl-scroll" style="max-height:320px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>UC</th>
+                    <th>OS (Planejamento)</th>
+                    <th>STATUS BI</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-retirar">
+                  <tr>
+                    <td colspan="3" class="empty-state">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ────────────────────────────────── PANEL 4: OPORTUNIDADE EM ROTA -->
-  <div class="panel" id="panel-oport">
-    <div class="section-title">Oportunidade em Rota</div>
-    <div class="section-sub">Equivalente à macro <code>GerarOportunidadesEPlanejamento</code> — UCs com cruzamento geográfico de equipes</div>
+    <!-- ────────────────────────────────── PANEL 4: OPORTUNIDADE EM ROTA -->
+    <div class="panel" id="panel-oport">
+      <div class="section-title">Oportunidade em Rota</div>
+      <div class="section-sub">Equivalente à macro <code>GerarOportunidadesEPlanejamento</code> — UCs com cruzamento
+        geográfico de equipes</div>
 
-    <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">Oportunidades</div><div class="stat-value green" id="so-count">—</div></div>
-      <div class="stat-card"><div class="stat-label">Endereços únicos</div><div class="stat-value blue" id="so-end">—</div></div>
-      <div class="stat-card"><div class="stat-label">Equipes candidatas</div><div class="stat-value yellow" id="so-eq">—</div></div>
-    </div>
-
-    <div class="btn-group">
-      <input class="search-box" placeholder="Buscar endereço, UC..." id="search-oport" oninput="filterTable('oport')">
-    </div>
-
-    <div class="table-wrap">
-      <div class="table-header">
-        <span class="table-title">Oportunidades em Rota</span>
-      </div>
-      <div class="tbl-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>ENDEREÇO</th>
-              <th>UC</th>
-              <th>EQUIPES CANDIDATAS</th>
-              <th>STATUS</th>
-              <th>BAIRRO</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-oport"><tr><td colspan="5" class="empty-state"><div class="empty-icon">🗺️</div>Execute o processamento para gerar oportunidades</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ────────────────────────────────── PANEL 5: EXPORTAR -->
-  <div class="panel" id="panel-export">
-    <div class="section-title">Exportar Resultados</div>
-    <div class="section-sub">Gere planilhas compatíveis com o formato original do PlanejamentoSP</div>
-
-    <div class="upload-grid">
-      <div class="export-area">
-        <div class="drop-label" style="margin-bottom:12px;">📊 Validação de Notas</div>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Exporta a aba <code>Validação de notas</code> com os resultados do cruzamento OFS × BD_Sirtec</p>
-        <button class="btn btn-primary" onclick="exportSheet('validar')">⬇ Baixar XLSX</button>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Oportunidades</div>
+          <div class="stat-value green" id="so-count">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Endereços únicos</div>
+          <div class="stat-value blue" id="so-end">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Equipes candidatas</div>
+          <div class="stat-value yellow" id="so-eq">—</div>
+        </div>
       </div>
 
-      <div class="export-area">
-        <div class="drop-label" style="margin-bottom:12px;">📋 DASH 2</div>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Exporta a aba <code>DASH 2</code> com as 3 colunas: produtivas, falta gerar, UC duplicada</p>
-        <button class="btn btn-primary" onclick="exportSheet('dash')">⬇ Baixar XLSX</button>
+      <div class="btn-group">
+        <input class="search-box" placeholder="Buscar endereço, UC..." id="search-oport" oninput="filterTable('oport')">
       </div>
 
-      <div class="export-area">
-        <div class="drop-label" style="margin-bottom:12px;">🗺️ Oportunidade em Rota</div>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Exporta a aba <code>OPORTUNIDADE EM ROTA</code> com endereços e equipes candidatas</p>
-        <button class="btn btn-primary" onclick="exportSheet('oport')">⬇ Baixar XLSX</button>
-      </div>
-
-      <div class="export-area">
-        <div class="drop-label" style="margin-bottom:12px;">📦 Exportação Completa</div>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Gera um único .xlsx com todas as abas processadas no formato PlanejamentoSP</p>
-        <button class="btn btn-secondary" onclick="exportAll()">⬇ Baixar PlanejamentoSP_RESULTADO.xlsx</button>
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title">Oportunidades em Rota</span>
+        </div>
+        <div class="tbl-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ENDEREÇO</th>
+                <th>UC</th>
+                <th>EQUIPES CANDIDATAS</th>
+                <th>STATUS</th>
+                <th>BAIRRO</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-oport">
+              <tr>
+                <td colspan="5" class="empty-state">
+                  <div class="empty-icon">🗺️</div>Execute o processamento para gerar oportunidades
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
 
-</div><!-- /wrap -->
+    <!-- ────────────────────────────────── PANEL 5: EXPORTAR -->
+    <div class="panel" id="panel-export">
+      <div class="section-title">Exportar Resultados</div>
+      <div class="section-sub">Gere planilhas compatíveis com o formato original do PlanejamentoSP</div>
 
-<script>
-// ═══════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════
-const STATE = {
-  ofsData: null,
-  bdData: null,
-  biData: null,
-  planoData: null,
-  validResult: [],
-  dashProd: [],
-  dashFalta: [],
-  dashDup: [],
-  oportunidades: [],
-  filters: { validar: 'all', dup: '' },
-  processed: false
-};
+      <div class="upload-grid">
+        <div class="export-area">
+          <div class="drop-label" style="margin-bottom:12px;">📊 Validação de Notas</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Exporta a aba <code>Validação de notas</code>
+            com os resultados do cruzamento OFS × BD_Sirtec</p>
+          <button class="btn btn-primary" onclick="exportSheet('validar')">⬇ Baixar XLSX</button>
+        </div>
 
-// ═══════════════════════════════════════════
-//  UTILS
-// ═══════════════════════════════════════════
-function log(msg, type='') {
-  const b = document.getElementById('log-box');
-  const ts = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  b.innerHTML += `<br><span class="log-${type}">[${ts}] ${msg}</span>`;
-  b.scrollTop = b.scrollHeight;
-}
+        <div class="export-area">
+          <div class="drop-label" style="margin-bottom:12px;">📋 DASH 2</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Exporta a aba <code>DASH 2</code> com as 3
+            colunas: produtivas, falta gerar, UC duplicada</p>
+          <button class="btn btn-primary" onclick="exportSheet('dash')">⬇ Baixar XLSX</button>
+        </div>
 
-function setProgress(pct, label) {
-  document.getElementById('prog-bar').style.width = pct + '%';
-  if (label) document.getElementById('prog-label').textContent = label;
-}
+        <div class="export-area">
+          <div class="drop-label" style="margin-bottom:12px;">🗺️ Oportunidade em Rota</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Exporta a aba
+            <code>OPORTUNIDADE EM ROTA</code> com endereços e equipes candidatas</p>
+          <button class="btn btn-primary" onclick="exportSheet('oport')">⬇ Baixar XLSX</button>
+        </div>
 
-function showProgress(show) {
-  document.getElementById('prog-wrap').classList.toggle('show', show);
-}
+        <div class="export-area">
+          <div class="drop-label" style="margin-bottom:12px;">📦 Exportação Completa</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Gera um único .xlsx com todas as abas
+            processadas no formato PlanejamentoSP</p>
+          <button class="btn btn-secondary" onclick="exportAll()">⬇ Baixar PlanejamentoSP_RESULTADO.xlsx</button>
+        </div>
+      </div>
+    </div>
 
-function normalizeText(txt) {
-  if (!txt) return '';
-  return String(txt).toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s]/g, '')
-    .trim();
-}
+  </div><!-- /wrap -->
 
-function parseDate(v) {
-  if (!v) return null;
-  if (v instanceof Date) return v;
-  const d = new Date(v);
-  return isNaN(d) ? null : d;
-}
+  <script>
+    // ═══════════════════════════════════════════
+    //  STATE
+    // ═══════════════════════════════════════════
+    const STATE = {
+      ofsData: null,
+      bdData: null,
+      biData: null,
+      planoData: null,
+      validResult: [],
+      dashProd: [],
+      dashFalta: [],
+      dashDup: [],
+      dashRetirar: [],
+      oportunidades: [],
+      filters: { validar: 'all', dup: '' },
+      processed: false
+    };
 
-function fmtDate(v) {
-  const d = parseDate(v);
-  if (!d) return '—';
-  return d.toLocaleDateString('pt-BR');
-}
+    // ═══════════════════════════════════════════
+    //  UTILS
+    // ═══════════════════════════════════════════
+    function log(msg, type = '') {
+      const b = document.getElementById('log-box');
+      const ts = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      b.innerHTML += `<br><span class="log-${type}">[${ts}] ${msg}</span>`;
+      b.scrollTop = b.scrollHeight;
+    }
 
-function switchTab(id) {
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    const ids = ['upload','validar','dash','oport','export'];
-    t.classList.toggle('active', ids[i] === id);
-  });
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('panel-'+id).classList.add('active');
-}
+    function setProgress(pct, label) {
+      document.getElementById('prog-bar').style.width = pct + '%';
+      if (label) document.getElementById('prog-label').textContent = label;
+    }
 
-// ═══════════════════════════════════════════
-//  FILE LOADING
-// ═══════════════════════════════════════════
-function loadMainFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  document.getElementById('name-xlsm').textContent = file.name;
-  document.getElementById('name-xlsm').classList.add('loaded');
-  document.getElementById('zone-xlsm').classList.add('loaded');
-  log(`Lendo ${file.name}...`, 'info');
+    function showProgress(show) {
+      document.getElementById('prog-wrap').classList.toggle('show', show);
+    }
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const wb = XLSX.read(e.target.result, {type:'array', cellDates: true});
-      log(`Planilha carregada. Abas encontradas: ${wb.SheetNames.join(', ')}`, 'ok');
+    function normalizeText(txt) {
+      if (!txt) return '';
+      return String(txt).toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, '')
+        .trim();
+    }
 
-      // OFS_Abertas
-      const ofsName = wb.SheetNames.find(s => s.toLowerCase().includes('ofs'));
-      if (ofsName) {
-        STATE.ofsData = XLSX.utils.sheet_to_json(wb.Sheets[ofsName], {raw:false, defval:''});
-        log(`OFS_Abertas: ${STATE.ofsData.length} linhas`, 'ok');
+    function parseDate(v) {
+      if (!v) return null;
+      if (v instanceof Date) return v;
+      const d = new Date(v);
+      return isNaN(d) ? null : d;
+    }
+
+    function fmtDate(v) {
+      const d = parseDate(v);
+      if (!d) return '—';
+      return d.toLocaleDateString('pt-BR');
+    }
+
+    function switchTab(id) {
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        const ids = ['upload', 'validar', 'dash', 'oport', 'export'];
+        t.classList.toggle('active', ids[i] === id);
+      });
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + id).classList.add('active');
+    }
+
+    // ═══════════════════════════════════════════
+    //  FILE LOADING
+    // ═══════════════════════════════════════════
+    function loadMainFile(input) {
+      const file = input.files[0];
+      if (!file) return;
+      document.getElementById('name-xlsm').textContent = file.name;
+      document.getElementById('name-xlsm').classList.add('loaded');
+      document.getElementById('zone-xlsm').classList.add('loaded');
+      log(`Lendo ${file.name}...`, 'info');
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+          log(`Planilha carregada. Abas encontradas: ${wb.SheetNames.join(', ')}`, 'ok');
+
+          // OFS_Abertas
+          const ofsName = wb.SheetNames.find(s => s.toLowerCase().includes('ofs'));
+          if (ofsName) {
+            STATE.ofsData = XLSX.utils.sheet_to_json(wb.Sheets[ofsName], { raw: false, defval: '' });
+            log(`OFS_Abertas: ${STATE.ofsData.length} linhas`, 'ok');
+          }
+          // BD_Sirtec
+          const bdName = wb.SheetNames.find(s => s.toLowerCase().includes('bd') || s.toLowerCase().includes('sirtec'));
+          if (bdName) {
+            STATE.bdData = XLSX.utils.sheet_to_json(wb.Sheets[bdName], { raw: false, defval: '' });
+            log(`BD_Sirtec: ${STATE.bdData.length} linhas`, 'ok');
+          }
+          // BI_Exec
+          const biName = wb.SheetNames.find(s => s.toLowerCase().includes('bi_exec') || (s.toLowerCase().includes('bi') && s.toLowerCase().includes('exec')));
+          if (biName) {
+            STATE.biData = XLSX.utils.sheet_to_json(wb.Sheets[biName], { raw: false, defval: '' });
+            log(`BI_Exec: ${STATE.biData.length} linhas`, 'ok');
+          }
+          // Planejamento
+          const planoName = wb.SheetNames.find(s => s.toLowerCase().includes('planejamento'));
+          if (planoName) {
+            STATE.planoData = XLSX.utils.sheet_to_json(wb.Sheets[planoName], { raw: false, defval: '' });
+            log(`Planejamento: ${STATE.planoData.length} linhas`, 'ok');
+          }
+
+          document.getElementById('btn-process').disabled = false;
+        } catch (err) {
+          log('Erro ao ler arquivo: ' + err.message, 'err');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function loadFile(input, type) {
+      const file = input.files[0];
+      if (!file) return;
+      const nameEl = document.getElementById('name-' + type);
+      nameEl.textContent = file.name;
+      nameEl.classList.add('loaded');
+      document.getElementById('zone-' + type).classList.add('loaded');
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          let data;
+          if (file.name.endsWith('.csv')) {
+            const wb = XLSX.read(e.target.result, { type: 'string' });
+            data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false, defval: '' });
+          } else {
+            const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+            data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false, defval: '' });
+          }
+          if (type === 'ofs') STATE.ofsData = data;
+          else if (type === 'bd') STATE.bdData = data;
+          else if (type === 'bi') STATE.biData = data;
+          else if (type === 'plano') STATE.planoData = data;
+          log(`${type.toUpperCase()}: ${data.length} linhas carregadas`, 'ok');
+          document.getElementById('btn-process').disabled = !(STATE.ofsData || STATE.bdData);
+        } catch (err) {
+          log('Erro: ' + err.message, 'err');
+        }
+      };
+      if (file.name.endsWith('.csv')) reader.readAsText(file, 'cp1252');
+      else reader.readAsArrayBuffer(file);
+    }
+
+    function clearAll() {
+      STATE.ofsData = STATE.bdData = STATE.biData = STATE.planoData = null;
+      STATE.validResult = STATE.dashProd = STATE.dashFalta = STATE.dashDup = STATE.dashRetirar = STATE.oportunidades = [];
+      document.getElementById('btn-process').disabled = true;
+      document.getElementById('log-box').innerHTML = '<span class="log-info">// Aguardando arquivos...</span>';
+      ['xlsm', 'ofs', 'bd', 'bi'].forEach(t => {
+        const z = document.getElementById('zone-' + t);
+        if (z) z.classList.remove('loaded');
+      });
+      log('Estado limpo.', 'warn');
+    }
+
+
+    // ═══════════════════════════════════════════
+    //  HELPER — matches VBA NormalizarTexto
+    // ═══════════════════════════════════════════
+    function normText(txt) {
+      if (!txt) return '';
+      return String(txt).toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function findVal(row, keys) {
+      for (const k of keys) {
+        if (row[k] !== undefined && row[k] !== null && row[k] !== '') return String(row[k]).trim();
       }
-      // BD_Sirtec
-      const bdName = wb.SheetNames.find(s => s.toLowerCase().includes('bd') || s.toLowerCase().includes('sirtec'));
-      if (bdName) {
-        STATE.bdData = XLSX.utils.sheet_to_json(wb.Sheets[bdName], {raw:false, defval:''});
-        log(`BD_Sirtec: ${STATE.bdData.length} linhas`, 'ok');
+      return '';
+    }
+
+    // ── ROW ACCESSORS (aligned with VBA column positions) ──
+    // OFS_Abertas: col5=NRO UC, col6=OS, col3=Início SLA, col1=Recurso, col20=Bairro, col21=Endereço
+    function ofsUC(r) { return findVal(r, ['NRO UC', 'UC']); }
+    function ofsOS(r) { return findVal(r, ['Ordem de Serviço', 'Ordem de Servico', 'OS']); }
+    function ofsSLA(r) { return findVal(r, ['Início do SLA', 'Inicio do SLA', 'Início SLA']); }
+    function ofsFimSLA(r) { return findVal(r, ['Fim do SLA', 'Fim SLA', 'FIM DO SLA']); }
+    function ofsRecurso(r) { return findVal(r, ['Recurso', 'RECURSO']); }
+    function ofsTipo(r) { return findVal(r, ['Tipos de Nota', 'Tipo de Nota', 'TIPO']); }
+    function ofsBairro(r) { return findVal(r, ['Bairro', 'BAIRRO', 'neighborhood']); }
+    function ofsRua(r) { return findVal(r, ['Endereço', 'Endereco', 'street', 'Rua']); }
+
+    // BD_Sirtec: col3=deviceName(UC), col12=neighborhood(bairro), col13=street(rua)
+    function bdUC(r) { return findVal(r, ['deviceName', 'NRO UC', 'UC']); }
+    function bdBairro(r) { return findVal(r, ['neighborhood', 'Bairro', 'bairro']); }
+    function bdRua(r) { return findVal(r, ['street', 'Endereço', 'rua', 'Rua']); }
+    function bdAddress(r) { const s = bdRua(r), b = bdBairro(r); return s ? `${s}, ${b || ''}` : b || '—'; }
+
+    // BI_Exec: col2=Tipo Exec.(status), col4=NRO UC, col8=Motivo rejeição
+    function biUC(r) { return findVal(r, ['NRO UC', 'UC']); }
+    function biStatus(r) { return findVal(r, ['Tipo Exec.', 'Tipo Exec', 'TipoExec', 'Valor Produção', 'status']); }
+    function biMotivo(r) { return findVal(r, ['Motivo de rejeição', 'Motivo de Rejeicao', 'Motivo rejeição', 'Motivo']); }
+
+    // Planejamento: col1=Recurso, col4=NRO UC, col20=Bairro, col21=Endereço
+    function planoUC(r) { return findVal(r, ['NRO UC', 'UC']); }
+    function planoEquipe(r) { return findVal(r, ['Recurso', 'RECURSO']); }
+    function planoBairro(r) { return findVal(r, ['Bairro', 'BAIRRO']); }
+    function planoRua(r) { return findVal(r, ['Endereço', 'Endereco', 'street']); }
+
+    // ═══════════════════════════════════════════
+    //  PROCESSAMENTO — replica exata da macro VBA
+    //  GerarOportunidadesEPlanejamento (V11)
+    // ═══════════════════════════════════════════
+    async function processAll() {
+      if (!STATE.ofsData && !STATE.bdData) { log('Carregue pelo menos um arquivo!', 'err'); return; }
+      showProgress(true);
+      setProgress(5, 'INICIANDO...');
+      log('=== Processamento V11 iniciado ===', 'info');
+      await sleep(50);
+
+      const ofsRows = STATE.ofsData || [];
+      const bdRows = STATE.bdData || [];
+      const biRows = STATE.biData || [];
+      const planoRows = STATE.planoData || [];
+
+      // ─── FASE 1: MAPEAMENTO ───────────────────────────────
+
+      // BI_Exec → dictExecProdutivas, dictExecAll, dictExecRejeicao
+      setProgress(15, 'MAPEANDO BI_EXEC...');
+      const dictExecProdutivas = {};  // UC → true  (Tipo Exec = produtiva)
+      const dictExecAll = {};  // UC → true  (qualquer linha)
+      const dictExecRejeicao = {};  // UC → motivo rejeição
+
+      biRows.forEach(r => {
+        const uc = biUC(r);
+        const status = biStatus(r).toLowerCase();
+        const motivo = biMotivo(r);
+        if (!uc) return;
+        dictExecAll[uc] = true;
+        if (status === 'produtiva') {
+          dictExecProdutivas[uc] = true;
+        } else {
+          if (motivo) dictExecRejeicao[uc] = motivo;
+        }
+      });
+      log(`BI_Exec: ${Object.keys(dictExecAll).length} UCs | ${Object.keys(dictExecProdutivas).length} produtivas`, 'ok');
+
+      // OFS_Abertas → dictOpsUcs (UC → OS)
+      setProgress(25, 'MAPEANDO OFS_ABERTAS...');
+      const dictOpsUcs = {};
+      ofsRows.forEach(r => {
+        const uc = ofsUC(r);
+        const os = ofsOS(r);
+        if (uc && !dictOpsUcs[uc]) dictOpsUcs[uc] = os;
+      });
+      log(`OFS: ${ofsRows.length} linhas | ${Object.keys(dictOpsUcs).length} UCs únicas`, 'ok');
+
+      // Planejamento → dictPlanoUcs + dictPlanoGeografico
+      setProgress(35, 'MAPEANDO PLANEJAMENTO + GEOGRÁFICO...');
+      const dictPlanoUcs = {};
+      const dictPlanoGeo = {};  // "R"+normRua or "B"+normBairro → Set<equipe>
+
+      function geoAdd(key, equipe) {
+        if (!dictPlanoGeo[key]) dictPlanoGeo[key] = new Set();
+        dictPlanoGeo[key].add(equipe);
       }
-      // BI_Exec
-      const biName = wb.SheetNames.find(s => s.toLowerCase().includes('bi_exec') || (s.toLowerCase().includes('bi') && s.toLowerCase().includes('exec')));
-      if (biName) {
-        STATE.biData = XLSX.utils.sheet_to_json(wb.Sheets[biName], {raw:false, defval:''});
-        log(`BI_Exec: ${STATE.biData.length} linhas`, 'ok');
-      }
-      // Planejamento
-      const planoName = wb.SheetNames.find(s => s.toLowerCase().includes('planejamento'));
-      if (planoName) {
-        STATE.planoData = XLSX.utils.sheet_to_json(wb.Sheets[planoName], {raw:false, defval:''});
-        log(`Planejamento: ${STATE.planoData.length} linhas`, 'ok');
+
+      // Apenas equipes TEL são candidatas
+      function isEquipeTEL(equipe) {
+        return equipe && equipe.trim().toUpperCase().startsWith('TEL');
       }
 
-      document.getElementById('btn-process').disabled = false;
-    } catch(err) {
-      log('Erro ao ler arquivo: ' + err.message, 'err');
+      planoRows.forEach(r => {
+        const uc = planoUC(r);
+        const equipe = planoEquipe(r);
+        const rua = normText(planoRua(r));
+        const bairro = normText(planoBairro(r));
+        if (uc) dictPlanoUcs[uc] = true;
+        if (equipe && isEquipeTEL(equipe)) {
+          if (rua) geoAdd('R' + rua, equipe);
+          if (bairro) geoAdd('B' + bairro, equipe);
+        }
+      });
+
+      // Also index OFS_Abertas geographically (apenas equipes TEL)
+      ofsRows.forEach(r => {
+        const equipe = ofsRecurso(r);
+        const rua = normText(ofsRua(r));
+        const bairro = normText(ofsBairro(r));
+        if (equipe && isEquipeTEL(equipe)) {
+          if (rua) geoAdd('R' + rua, equipe);
+          if (bairro) geoAdd('B' + bairro, equipe);
+        }
+      });
+
+      log(`Planejamento: ${Object.keys(dictPlanoUcs).length} UCs | ${Object.keys(dictPlanoGeo).length} chaves geo`, 'ok');
+      await sleep(20);
+
+      // ─── FASE 2: DASH 2 ──────────────────────────────────
+      setProgress(48, 'GERANDO DASH 2...');
+
+      // Col A — NOTAS PRODUTIVAS: UC da OFS que está em dictExecProdutivas
+      STATE.dashProd = [];
+      ofsRows.forEach(r => {
+        const uc = ofsUC(r);
+        if (uc && dictExecProdutivas[uc]) {
+          STATE.dashProd.push({ uc, os: ofsOS(r), tipo: ofsTipo(r), recurso: ofsRecurso(r) });
+        }
+      });
+
+      // Col B — FALTA GERAR: UC do BD que NÃO está em OFS, NÃO é produtiva, NÃO está no BI
+      STATE.dashFalta = [];
+      bdRows.forEach(r => {
+        const uc = bdUC(r);
+        if (!uc) return;
+        if (!dictOpsUcs[uc] && !dictExecProdutivas[uc] && !dictExecAll[uc]) {
+          STATE.dashFalta.push({ uc });
+        }
+      });
+
+      // Col C — UC DUPLICADA (V11): linha cuja OS ≠ a mais recente por SLA da mesma UC
+      STATE.dashDup = [];
+      const dictUcsRecentes = {};  // UC → { os, sla: Date|null }
+
+      // Pass 1: encontra OS mais recente por UC (por Início do SLA)
+      ofsRows.forEach(r => {
+        const uc = ofsUC(r);
+        const os = ofsOS(r);
+        const slaStr = ofsSLA(r);
+        if (!uc) return;
+        let d = null;
+        if (slaStr) { const t = new Date(slaStr); if (!isNaN(t)) d = t; }
+        if (!dictUcsRecentes[uc]) {
+          dictUcsRecentes[uc] = { os, sla: d };
+        } else {
+          const saved = dictUcsRecentes[uc];
+          if (d && (!saved.sla || d > saved.sla)) {
+            dictUcsRecentes[uc] = { os, sla: d };
+          }
+        }
+      });
+
+      // Pass 2: linhas cujo OS ≠ mais recente → col C
+      ofsRows.forEach(r => {
+        const uc = ofsUC(r);
+        const osLinha = ofsOS(r);
+        if (!uc) return;
+        const recente = dictUcsRecentes[uc];
+        if (recente && osLinha !== recente.os) {
+          STATE.dashDup.push({ uc, os: osLinha, label: `${uc} (OS: ${osLinha})` });
+        }
+      });
+
+      // Col D — RETIRAR DA PROGRAMAÇÃO: UCs do Planejamento que foram executadas no BI_Exec
+      STATE.dashRetirar = [];
+      planoRows.forEach(r => {
+        const uc = planoUC(r);
+        if (!uc) return;
+        if (dictExecAll[uc]) {
+          // Verifica se já adicionou essa UC
+          if (!STATE.dashRetirar.find(x => x.uc === uc)) {
+            const os = ofsOS(ofsRows.find(o => ofsUC(o) === uc) || {});
+            const biStatusVal = dictExecProdutivas[uc] ? 'PRODUTIVA' : (dictExecRejeicao[uc] ? `REJ: ${dictExecRejeicao[uc]}` : 'EXECUTADA');
+            STATE.dashRetirar.push({ uc, os: os || '—', biStatus: biStatusVal });
+          }
+        }
+      });
+
+      log(`DASH A=${STATE.dashProd.length} | B=${STATE.dashFalta.length} | C=${STATE.dashDup.length} | D=${STATE.dashRetirar.length}`, 'ok');
+      await sleep(20);
+
+      // ─── FASE 2b: OPORTUNIDADE EM ROTA ───────────────────
+      setProgress(68, 'GERANDO OPORTUNIDADES...');
+      STATE.oportunidades = [];
+
+      bdRows.forEach(r => {
+        const uc = bdUC(r);
+        const ruaBD = normText(bdRua(r));
+        const bairBD = normText(bdBairro(r));
+
+        if (!uc) return;
+        if (dictExecProdutivas[uc]) return;  // skip produtivas
+
+        let statusFinal = '';
+        if (dictOpsUcs[uc] && !dictPlanoUcs[uc]) {
+          statusFinal = 'INSERIR NA PROGRAMACAO - A NOTA ELA TA ABERTA NO BD OFS (NA MESMA RUA/BAIRRO, POREM NAO FOI COLOCADA NA PROGRAMACAO';
+        } else if (!dictOpsUcs[uc] && !dictExecAll[uc]) {
+          statusFinal = 'GERAR NOTA - NAO ABERTA OFS';
+        } else if (!dictOpsUcs[uc] && dictExecAll[uc]) {
+          const motivo = dictExecRejeicao[uc] || '';
+          statusFinal = `GERAR NOTA - MOTIVO DA REJEICAO: ${motivo} (NAO ABERTA OFS)`;
+        }
+
+        if (!statusFinal) return;
+
+        // Cruzamento geográfico de equipes candidatas — somente por RUA
+        const equipeSet = new Set();
+        if (ruaBD && dictPlanoGeo['R' + ruaBD]) dictPlanoGeo['R' + ruaBD].forEach(e => equipeSet.add(e));
+
+        STATE.oportunidades.push({
+          endereco: bdAddress(r),
+          uc,
+          equipes: equipeSet.size > 0 ? [...equipeSet].join('; ') : '',
+          status: statusFinal,
+          bairro: bdBairro(r),
+          rua: bdRua(r)
+        });
+      });
+
+      log(`Oportunidades: ${STATE.oportunidades.length}`, 'ok');
+
+      // ─── FASE 3: VALIDAÇÃO GERAL (aba 2) ─────────────────
+      setProgress(85, 'COMPILANDO VALIDAÇÃO...');
+      STATE.validResult = [];
+      const bdUCSet = new Set(bdRows.map(r => bdUC(r)));
+
+      ofsRows.forEach(r => {
+        const uc = ofsUC(r);
+        const os = ofsOS(r);
+        const tipo = ofsTipo(r);
+        const recurso = ofsRecurso(r);
+        const sla = ofsFimSLA(r);
+        const isProd = uc ? !!dictExecProdutivas[uc] : false;
+        const inBI = uc ? !!dictExecAll[uc] : false;
+        const inBD = bdRows.length > 0 ? bdUCSet.has(uc) : null;
+        const isNonRecentDup = uc && dictUcsRecentes[uc] && os !== dictUcsRecentes[uc].os;
+
+        let status = 'OK', obs = 'Validada';
+        if (isProd) { status = 'DIVERGENTE'; obs = 'Produtiva no BI_Exec — cancelar OS'; }
+        else if (isNonRecentDup) { status = 'DUPLICADA'; obs = 'OS não é a mais recente desta UC'; }
+        else if (inBI) { status = 'BI_REJ'; obs = dictExecRejeicao[uc] || 'No BI_Exec (não produtiva)'; }
+        else if (inBD === false) { status = 'NAO_BD'; obs = 'UC não encontrada no BD_Sirtec'; }
+
+        STATE.validResult.push({ status, uc, os, tipo, recurso, sla, inBD: !!inBD, inBI, obs });
+      });
+
+      setProgress(100, 'CONCLUÍDO');
+      log(`Total OFS processado: ${STATE.validResult.length} linhas`, 'ok');
+      log('=== Processamento V11 concluído! ===', 'ok');
+
+      renderValidar();
+      renderDash();
+      renderOport();
+      STATE.processed = true;
+      setTimeout(() => showProgress(false), 1500);
     }
-  };
-  reader.readAsArrayBuffer(file);
-}
 
-function loadFile(input, type) {
-  const file = input.files[0];
-  if (!file) return;
-  const nameEl = document.getElementById('name-'+type);
-  nameEl.textContent = file.name;
-  nameEl.classList.add('loaded');
-  document.getElementById('zone-'+type).classList.add('loaded');
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      let data;
-      if (file.name.endsWith('.csv')) {
-        const wb = XLSX.read(e.target.result, {type:'string'});
-        data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {raw:false, defval:''});
-      } else {
-        const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
-        data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {raw:false, defval:''});
+    function findVal(row, keys) {
+      for (const k of keys) {
+        if (row[k] !== undefined && row[k] !== '') return String(row[k]);
       }
-      if (type === 'ofs') STATE.ofsData = data;
-      else if (type === 'bd') STATE.bdData = data;
-      else if (type === 'bi') STATE.biData = data;
-      else if (type === 'plano') STATE.planoData = data;
-      log(`${type.toUpperCase()}: ${data.length} linhas carregadas`, 'ok');
-      document.getElementById('btn-process').disabled = !(STATE.ofsData || STATE.bdData);
-    } catch(err) {
-      log('Erro: '+err.message, 'err');
-    }
-  };
-  if (file.name.endsWith('.csv')) reader.readAsText(file, 'cp1252');
-  else reader.readAsArrayBuffer(file);
-}
-
-function clearAll() {
-  STATE.ofsData = STATE.bdData = STATE.biData = STATE.planoData = null;
-  STATE.validResult = STATE.dashProd = STATE.dashFalta = STATE.dashDup = STATE.oportunidades = [];
-  document.getElementById('btn-process').disabled = true;
-  document.getElementById('log-box').innerHTML = '<span class="log-info">// Aguardando arquivos...</span>';
-  ['xlsm','ofs','bd','bi'].forEach(t => {
-    const z = document.getElementById('zone-'+t);
-    if (z) z.classList.remove('loaded');
-  });
-  log('Estado limpo.', 'warn');
-}
-
-
-// ═══════════════════════════════════════════
-//  HELPER — matches VBA NormalizarTexto
-// ═══════════════════════════════════════════
-function normText(txt) {
-  if (!txt) return '';
-  return String(txt).toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function findVal(row, keys) {
-  for (const k of keys) {
-    if (row[k] !== undefined && row[k] !== null && row[k] !== '') return String(row[k]).trim();
-  }
-  return '';
-}
-
-// ── ROW ACCESSORS (aligned with VBA column positions) ──
-// OFS_Abertas: col5=NRO UC, col6=OS, col3=Início SLA, col1=Recurso, col20=Bairro, col21=Endereço
-function ofsUC(r)      { return findVal(r,['NRO UC','UC']); }
-function ofsOS(r)      { return findVal(r,['Ordem de Serviço','Ordem de Servico','OS']); }
-function ofsSLA(r)     { return findVal(r,['Início do SLA','Inicio do SLA','Início SLA']); }
-function ofsFimSLA(r)  { return findVal(r,['Fim do SLA','Fim SLA','FIM DO SLA']); }
-function ofsRecurso(r) { return findVal(r,['Recurso','RECURSO']); }
-function ofsTipo(r)    { return findVal(r,['Tipos de Nota','Tipo de Nota','TIPO']); }
-function ofsBairro(r)  { return findVal(r,['Bairro','BAIRRO','neighborhood']); }
-function ofsRua(r)     { return findVal(r,['Endereço','Endereco','street','Rua']); }
-
-// BD_Sirtec: col3=deviceName(UC), col12=neighborhood(bairro), col13=street(rua)
-function bdUC(r)       { return findVal(r,['deviceName','NRO UC','UC']); }
-function bdBairro(r)   { return findVal(r,['neighborhood','Bairro','bairro']); }
-function bdRua(r)      { return findVal(r,['street','Endereço','rua','Rua']); }
-function bdAddress(r)  { const s=bdRua(r), b=bdBairro(r); return s?`${s}, ${b||''}`:b||'—'; }
-
-// BI_Exec: col2=Tipo Exec.(status), col4=NRO UC, col8=Motivo rejeição
-function biUC(r)       { return findVal(r,['NRO UC','UC']); }
-function biStatus(r)   { return findVal(r,['Tipo Exec.','Tipo Exec','TipoExec','Valor Produção','status']); }
-function biMotivo(r)   { return findVal(r,['Motivo de rejeição','Motivo de Rejeicao','Motivo rejeição','Motivo']); }
-
-// Planejamento: col1=Recurso, col4=NRO UC, col20=Bairro, col21=Endereço
-function planoUC(r)      { return findVal(r,['NRO UC','UC']); }
-function planoEquipe(r)  { return findVal(r,['Recurso','RECURSO']); }
-function planoBairro(r)  { return findVal(r,['Bairro','BAIRRO']); }
-function planoRua(r)     { return findVal(r,['Endereço','Endereco','street']); }
-
-// ═══════════════════════════════════════════
-//  PROCESSAMENTO — replica exata da macro VBA
-//  GerarOportunidadesEPlanejamento (V11)
-// ═══════════════════════════════════════════
-async function processAll() {
-  if (!STATE.ofsData && !STATE.bdData) { log('Carregue pelo menos um arquivo!','err'); return; }
-  showProgress(true);
-  setProgress(5, 'INICIANDO...');
-  log('=== Processamento V11 iniciado ===','info');
-  await sleep(50);
-
-  const ofsRows   = STATE.ofsData   || [];
-  const bdRows    = STATE.bdData    || [];
-  const biRows    = STATE.biData    || [];
-  const planoRows = STATE.planoData || [];
-
-  // ─── FASE 1: MAPEAMENTO ───────────────────────────────
-
-  // BI_Exec → dictExecProdutivas, dictExecAll, dictExecRejeicao
-  setProgress(15,'MAPEANDO BI_EXEC...');
-  const dictExecProdutivas = {};  // UC → true  (Tipo Exec = produtiva)
-  const dictExecAll        = {};  // UC → true  (qualquer linha)
-  const dictExecRejeicao   = {};  // UC → motivo rejeição
-
-  biRows.forEach(r => {
-    const uc     = biUC(r);
-    const status = biStatus(r).toLowerCase();
-    const motivo = biMotivo(r);
-    if (!uc) return;
-    dictExecAll[uc] = true;
-    if (status === 'produtiva') {
-      dictExecProdutivas[uc] = true;
-    } else {
-      if (motivo) dictExecRejeicao[uc] = motivo;
-    }
-  });
-  log(`BI_Exec: ${Object.keys(dictExecAll).length} UCs | ${Object.keys(dictExecProdutivas).length} produtivas`,'ok');
-
-  // OFS_Abertas → dictOpsUcs (UC → OS)
-  setProgress(25,'MAPEANDO OFS_ABERTAS...');
-  const dictOpsUcs = {};
-  ofsRows.forEach(r => {
-    const uc = ofsUC(r);
-    const os = ofsOS(r);
-    if (uc && !dictOpsUcs[uc]) dictOpsUcs[uc] = os;
-  });
-  log(`OFS: ${ofsRows.length} linhas | ${Object.keys(dictOpsUcs).length} UCs únicas`,'ok');
-
-  // Planejamento → dictPlanoUcs + dictPlanoGeografico
-  setProgress(35,'MAPEANDO PLANEJAMENTO + GEOGRÁFICO...');
-  const dictPlanoUcs = {};
-  const dictPlanoGeo = {};  // "R"+normRua or "B"+normBairro → Set<equipe>
-
-  function geoAdd(key, equipe) {
-    if (!dictPlanoGeo[key]) dictPlanoGeo[key] = new Set();
-    dictPlanoGeo[key].add(equipe);
-  }
-
-  // Apenas equipes TEL são candidatas
-  function isEquipeTEL(equipe) {
-    return equipe && equipe.trim().toUpperCase().startsWith('TEL');
-  }
-
-  planoRows.forEach(r => {
-    const uc     = planoUC(r);
-    const equipe = planoEquipe(r);
-    const rua    = normText(planoRua(r));
-    const bairro = normText(planoBairro(r));
-    if (uc) dictPlanoUcs[uc] = true;
-    if (equipe && isEquipeTEL(equipe)) {
-      if (rua)    geoAdd('R'+rua,    equipe);
-      if (bairro) geoAdd('B'+bairro, equipe);
-    }
-  });
-
-  // Also index OFS_Abertas geographically (apenas equipes TEL)
-  ofsRows.forEach(r => {
-    const equipe = ofsRecurso(r);
-    const rua    = normText(ofsRua(r));
-    const bairro = normText(ofsBairro(r));
-    if (equipe && isEquipeTEL(equipe)) {
-      if (rua)    geoAdd('R'+rua,    equipe);
-      if (bairro) geoAdd('B'+bairro, equipe);
-    }
-  });
-
-  log(`Planejamento: ${Object.keys(dictPlanoUcs).length} UCs | ${Object.keys(dictPlanoGeo).length} chaves geo`,'ok');
-  await sleep(20);
-
-  // ─── FASE 2: DASH 2 ──────────────────────────────────
-  setProgress(48,'GERANDO DASH 2...');
-
-  // Col A — NOTAS PRODUTIVAS: UC da OFS que está em dictExecProdutivas
-  STATE.dashProd = [];
-  ofsRows.forEach(r => {
-    const uc = ofsUC(r);
-    if (uc && dictExecProdutivas[uc]) {
-      STATE.dashProd.push({ uc, os: ofsOS(r), tipo: ofsTipo(r), recurso: ofsRecurso(r) });
-    }
-  });
-
-  // Col B — FALTA GERAR: UC do BD que NÃO está em OFS, NÃO é produtiva, NÃO está no BI
-  STATE.dashFalta = [];
-  bdRows.forEach(r => {
-    const uc = bdUC(r);
-    if (!uc) return;
-    if (!dictOpsUcs[uc] && !dictExecProdutivas[uc] && !dictExecAll[uc]) {
-      STATE.dashFalta.push({ uc });
-    }
-  });
-
-  // Col C — UC DUPLICADA (V11): linha cuja OS ≠ a mais recente por SLA da mesma UC
-  STATE.dashDup = [];
-  const dictUcsRecentes = {};  // UC → { os, sla: Date|null }
-
-  // Pass 1: encontra OS mais recente por UC (por Início do SLA)
-  ofsRows.forEach(r => {
-    const uc  = ofsUC(r);
-    const os  = ofsOS(r);
-    const slaStr = ofsSLA(r);
-    if (!uc) return;
-    let d = null;
-    if (slaStr) { const t = new Date(slaStr); if (!isNaN(t)) d = t; }
-    if (!dictUcsRecentes[uc]) {
-      dictUcsRecentes[uc] = { os, sla: d };
-    } else {
-      const saved = dictUcsRecentes[uc];
-      if (d && (!saved.sla || d > saved.sla)) {
-        dictUcsRecentes[uc] = { os, sla: d };
-      }
-    }
-  });
-
-  // Pass 2: linhas cujo OS ≠ mais recente → col C
-  ofsRows.forEach(r => {
-    const uc       = ofsUC(r);
-    const osLinha  = ofsOS(r);
-    if (!uc) return;
-    const recente  = dictUcsRecentes[uc];
-    if (recente && osLinha !== recente.os) {
-      STATE.dashDup.push({ uc, os: osLinha, label: `${uc} (OS: ${osLinha})` });
-    }
-  });
-
-  log(`DASH A=${STATE.dashProd.length} | B=${STATE.dashFalta.length} | C=${STATE.dashDup.length}`,'ok');
-  await sleep(20);
-
-  // ─── FASE 2b: OPORTUNIDADE EM ROTA ───────────────────
-  setProgress(68,'GERANDO OPORTUNIDADES...');
-  STATE.oportunidades = [];
-
-  bdRows.forEach(r => {
-    const uc     = bdUC(r);
-    const ruaBD  = normText(bdRua(r));
-    const bairBD = normText(bdBairro(r));
-
-    if (!uc) return;
-    if (dictExecProdutivas[uc]) return;  // skip produtivas
-
-    let statusFinal = '';
-    if (dictOpsUcs[uc] && !dictPlanoUcs[uc]) {
-      statusFinal = 'INSERIR NA PROGRAMACAO - A NOTA ELA TA ABERTA NO BD OFS (NA MESMA RUA/BAIRRO, POREM NAO FOI COLOCADA NA PROGRAMACAO';
-    } else if (!dictOpsUcs[uc] && !dictExecAll[uc]) {
-      statusFinal = 'GERAR NOTA - NAO ABERTA OFS';
-    } else if (!dictOpsUcs[uc] && dictExecAll[uc]) {
-      const motivo = dictExecRejeicao[uc] || '';
-      statusFinal = `GERAR NOTA - MOTIVO DA REJEICAO: ${motivo} (NAO ABERTA OFS)`;
+      return '';
     }
 
-    if (!statusFinal) return;
-
-    // Cruzamento geográfico de equipes candidatas
-    const equipeSet = new Set();
-    if (ruaBD  && dictPlanoGeo['R'+ruaBD])  dictPlanoGeo['R'+ruaBD].forEach(e  => equipeSet.add(e));
-    if (bairBD && dictPlanoGeo['B'+bairBD]) dictPlanoGeo['B'+bairBD].forEach(e => equipeSet.add(e));
-
-    STATE.oportunidades.push({
-      endereco: bdAddress(r),
-      uc,
-      equipes: equipeSet.size > 0 ? [...equipeSet].join('; ') : '',
-      status:  statusFinal,
-      bairro:  bdBairro(r),
-      rua:     bdRua(r)
-    });
-  });
-
-  log(`Oportunidades: ${STATE.oportunidades.length}`,'ok');
-
-  // ─── FASE 3: VALIDAÇÃO GERAL (aba 2) ─────────────────
-  setProgress(85,'COMPILANDO VALIDAÇÃO...');
-  STATE.validResult = [];
-  const bdUCSet = new Set(bdRows.map(r => bdUC(r)));
-
-  ofsRows.forEach(r => {
-    const uc      = ofsUC(r);
-    const os      = ofsOS(r);
-    const tipo    = ofsTipo(r);
-    const recurso = ofsRecurso(r);
-    const sla     = ofsFimSLA(r);
-    const isProd  = uc ? !!dictExecProdutivas[uc] : false;
-    const inBI    = uc ? !!dictExecAll[uc] : false;
-    const inBD    = bdRows.length > 0 ? bdUCSet.has(uc) : null;
-    const isNonRecentDup = uc && dictUcsRecentes[uc] && os !== dictUcsRecentes[uc].os;
-
-    let status = 'OK', obs = 'Validada';
-    if (isProd)           { status='DIVERGENTE';   obs='Produtiva no BI_Exec — cancelar OS'; }
-    else if (isNonRecentDup) { status='DUPLICADA'; obs='OS não é a mais recente desta UC'; }
-    else if (inBI)        { status='BI_REJ';       obs=dictExecRejeicao[uc]||'No BI_Exec (não produtiva)'; }
-    else if (inBD===false){ status='NAO_BD';       obs='UC não encontrada no BD_Sirtec'; }
-
-    STATE.validResult.push({ status, uc, os, tipo, recurso, sla, inBD:!!inBD, inBI, obs });
-  });
-
-  setProgress(100,'CONCLUÍDO');
-  log(`Total OFS processado: ${STATE.validResult.length} linhas`,'ok');
-  log('=== Processamento V11 concluído! ===','ok');
-
-  renderValidar();
-  renderDash();
-  renderOport();
-  STATE.processed = true;
-  setTimeout(() => showProgress(false), 1500);
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function findVal(row, keys) {
-  for (const k of keys) {
-    if (row[k] !== undefined && row[k] !== '') return String(row[k]);
-  }
-  return '';
-}
-
-// ═══════════════════════════════════════════
-//  RENDER FUNCTIONS
-// ═══════════════════════════════════════════
-function statusPill(s) {
-  const map = { OK:'green', DIVERGENTE:'red', NAO_BD:'yellow', DUPLICADA:'yellow' };
-  return `<span class="pill pill-${map[s]||'blue'}">${s}</span>`;
-}
-
-function renderValidar() {
-  const ok = STATE.validResult.filter(r=>r.status==='OK').length;
-  const div = STATE.validResult.filter(r=>r.status==='DIVERGENTE').length;
-  const nf = STATE.validResult.filter(r=>r.status==='NAO_BD').length;
-  const dup = STATE.validResult.filter(r=>r.status==='DUPLICADA').length;
-  document.getElementById('sv-total').textContent = STATE.validResult.length;
-  document.getElementById('sv-ok').textContent = ok;
-  document.getElementById('sv-div').textContent = div;
-  document.getElementById('sv-nf').textContent = nf;
-  document.getElementById('sv-dup').textContent = dup;
-
-  filterTable('validar');
-}
-
-function filterTable(type) {
-  if (type === 'validar') {
-    const search = document.getElementById('search-validar').value.toLowerCase();
-    const fv = STATE.filters.validar;
-    let rows = STATE.validResult;
-    if (fv !== 'all') rows = rows.filter(r => r.status === fv);
-    if (search) rows = rows.filter(r =>
-      r.uc.includes(search) || r.os.toLowerCase().includes(search) ||
-      r.recurso.toLowerCase().includes(search) || r.tipo.toLowerCase().includes(search)
-    );
-    const tb = document.getElementById('tbody-validar');
-    if (!rows.length) {
-      tb.innerHTML = '<tr><td colspan="9" class="empty-state">Nenhum resultado</td></tr>';
-      return;
+    // ═══════════════════════════════════════════
+    //  RENDER FUNCTIONS
+    // ═══════════════════════════════════════════
+    function statusPill(s) {
+      const map = { OK: 'green', DIVERGENTE: 'red', NAO_BD: 'yellow', DUPLICADA: 'yellow' };
+      return `<span class="pill pill-${map[s] || 'blue'}">${s}</span>`;
     }
-    tb.innerHTML = rows.slice(0,500).map(r => `
+
+    function renderValidar() {
+      const ok = STATE.validResult.filter(r => r.status === 'OK').length;
+      const div = STATE.validResult.filter(r => r.status === 'DIVERGENTE').length;
+      const nf = STATE.validResult.filter(r => r.status === 'NAO_BD').length;
+      const dup = STATE.validResult.filter(r => r.status === 'DUPLICADA').length;
+      document.getElementById('sv-total').textContent = STATE.validResult.length;
+      document.getElementById('sv-ok').textContent = ok;
+      document.getElementById('sv-div').textContent = div;
+      document.getElementById('sv-nf').textContent = nf;
+      document.getElementById('sv-dup').textContent = dup;
+
+      filterTable('validar');
+    }
+
+    function filterTable(type) {
+      if (type === 'validar') {
+        const search = document.getElementById('search-validar').value.toLowerCase();
+        const fv = STATE.filters.validar;
+        let rows = STATE.validResult;
+        if (fv !== 'all') rows = rows.filter(r => r.status === fv);
+        if (search) rows = rows.filter(r =>
+          r.uc.includes(search) || r.os.toLowerCase().includes(search) ||
+          r.recurso.toLowerCase().includes(search) || r.tipo.toLowerCase().includes(search)
+        );
+        const tb = document.getElementById('tbody-validar');
+        if (!rows.length) {
+          tb.innerHTML = '<tr><td colspan="9" class="empty-state">Nenhum resultado</td></tr>';
+          return;
+        }
+        tb.innerHTML = rows.slice(0, 500).map(r => `
       <tr>
         <td>${statusPill(r.status)}</td>
         <td style="font-family:'DM Mono',monospace;font-size:11px;">${r.uc}</td>
@@ -1238,16 +1570,16 @@ function filterTable(type) {
         <td style="color:var(--muted);font-size:11px;">${r.obs}</td>
       </tr>
     `).join('');
-    if (rows.length > 500) tb.innerHTML += `<tr><td colspan="9" style="text-align:center;color:var(--muted);font-size:11px;">... mostrando 500 de ${rows.length}</td></tr>`;
-  }
+        if (rows.length > 500) tb.innerHTML += `<tr><td colspan="9" style="text-align:center;color:var(--muted);font-size:11px;">... mostrando 500 de ${rows.length}</td></tr>`;
+      }
 
-  if (type === 'dup') {
-    const search = document.getElementById('search-dup').value.toLowerCase();
-    let rows = STATE.dashDup;
-    if (search) rows = rows.filter(r => r.uc.includes(search) || r.os.includes(search));
-    const tb = document.getElementById('tbody-dup');
-    if (!rows.length) { tb.innerHTML = '<tr><td colspan="4" class="empty-state">Nenhuma UC duplicada</td></tr>'; return; }
-    tb.innerHTML = rows.map(r => `
+      if (type === 'dup') {
+        const search = document.getElementById('search-dup').value.toLowerCase();
+        let rows = STATE.dashDup;
+        if (search) rows = rows.filter(r => r.uc.includes(search) || r.os.includes(search));
+        const tb = document.getElementById('tbody-dup');
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="4" class="empty-state">Nenhuma UC duplicada</td></tr>'; return; }
+        tb.innerHTML = rows.map(r => `
       <tr>
         <td style="font-family:'DM Mono',monospace;">${r.uc}</td>
         <td style="font-family:'DM Mono',monospace;font-size:11px;">${r.os}</td>
@@ -1255,17 +1587,17 @@ function filterTable(type) {
         <td><span class="pill pill-red">CANCELAR</span></td>
       </tr>
     `).join('');
-  }
+      }
 
-  if (type === 'oport') {
-    const search = document.getElementById('search-oport').value.toLowerCase();
-    let rows = STATE.oportunidades;
-    if (search) rows = rows.filter(r =>
-      r.endereco.toLowerCase().includes(search) || r.uc.toLowerCase().includes(search) || r.bairro.toLowerCase().includes(search)
-    );
-    const tb = document.getElementById('tbody-oport');
-    if (!rows.length) { tb.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhuma oportunidade encontrada</td></tr>'; return; }
-    tb.innerHTML = rows.slice(0,300).map(r => `
+      if (type === 'oport') {
+        const search = document.getElementById('search-oport').value.toLowerCase();
+        let rows = STATE.oportunidades;
+        if (search) rows = rows.filter(r =>
+          r.endereco.toLowerCase().includes(search) || r.uc.toLowerCase().includes(search) || r.bairro.toLowerCase().includes(search)
+        );
+        const tb = document.getElementById('tbody-oport');
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhuma oportunidade encontrada</td></tr>'; return; }
+        tb.innerHTML = rows.slice(0, 300).map(r => `
       <tr>
         <td>${r.endereco}</td>
         <td style="font-family:'DM Mono',monospace;font-size:11px;">${r.uc}</td>
@@ -1274,24 +1606,25 @@ function filterTable(type) {
         <td>${r.bairro}</td>
       </tr>
     `).join('');
-  }
-}
+      }
+    }
 
-function setFilter(type, val, el) {
-  STATE.filters[type] = val;
-  document.querySelectorAll(`[data-filter-val]`).forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  filterTable(type);
-}
+    function setFilter(type, val, el) {
+      STATE.filters[type] = val;
+      document.querySelectorAll(`[data-filter-val]`).forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      filterTable(type);
+    }
 
-function renderDash() {
-  document.getElementById('sd-prod').textContent = STATE.dashProd.length;
-  document.getElementById('sd-falta').textContent = STATE.dashFalta.length;
-  document.getElementById('sd-dup').textContent = STATE.dashDup.length;
+    function renderDash() {
+      document.getElementById('sd-prod').textContent = STATE.dashProd.length;
+      document.getElementById('sd-falta').textContent = STATE.dashFalta.length;
+      document.getElementById('sd-dup').textContent = STATE.dashDup.length;
+      document.getElementById('sd-retirar').textContent = STATE.dashRetirar.length;
 
-  const tp = document.getElementById('tbody-prod');
-  if (!STATE.dashProd.length) { tp.innerHTML = '<tr><td colspan="4" class="empty-state">Nenhuma</td></tr>'; }
-  else tp.innerHTML = STATE.dashProd.slice(0,200).map(r => `
+      const tp = document.getElementById('tbody-prod');
+      if (!STATE.dashProd.length) { tp.innerHTML = '<tr><td colspan="4" class="empty-state">Nenhuma</td></tr>'; }
+      else tp.innerHTML = STATE.dashProd.slice(0, 200).map(r => `
     <tr>
       <td style="font-family:'DM Mono',monospace;font-size:11px;">${r.uc}</td>
       <td style="font-family:'DM Mono',monospace;font-size:11px;">${r.os}</td>
@@ -1300,121 +1633,134 @@ function renderDash() {
     </tr>
   `).join('');
 
-  const tf = document.getElementById('tbody-falta');
-  if (!STATE.dashFalta.length) { tf.innerHTML = '<tr><td colspan="2" class="empty-state">Nenhuma</td></tr>'; }
-  else tf.innerHTML = STATE.dashFalta.slice(0,500).map(r => `
+      const tf = document.getElementById('tbody-falta');
+      if (!STATE.dashFalta.length) { tf.innerHTML = '<tr><td colspan="2" class="empty-state">Nenhuma</td></tr>'; }
+      else tf.innerHTML = STATE.dashFalta.slice(0, 500).map(r => `
     <tr>
       <td style="font-family:'DM Mono',monospace;font-size:11px;">${r.uc}</td>
       <td><span class="pill pill-yellow">FALTA GERAR</span></td>
     </tr>
   `).join('');
 
-  filterTable('dup');
-}
+      const tr = document.getElementById('tbody-retirar');
+      if (!STATE.dashRetirar.length) { tr.innerHTML = '<tr><td colspan="3" class="empty-state">Nenhuma</td></tr>'; }
+      else tr.innerHTML = STATE.dashRetirar.slice(0, 500).map(r => `
+    <tr>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;">${r.uc}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;">${r.os}</td>
+      <td><span class="pill ${r.biStatus.startsWith('REJ') ? 'pill-yellow' : 'pill-red'}">${r.biStatus}</span></td>
+    </tr>
+  `).join('');
 
-function renderOport() {
-  document.getElementById('so-count').textContent = STATE.oportunidades.length;
-  document.getElementById('so-end').textContent = new Set(STATE.oportunidades.map(r => r.endereco)).size;
-  const eqs = new Set(STATE.oportunidades.flatMap(r => r.equipes ? r.equipes.split('; ') : []));
-  document.getElementById('so-eq').textContent = eqs.size;
-  filterTable('oport');
-}
-
-// ═══════════════════════════════════════════
-//  EXPORT
-// ═══════════════════════════════════════════
-function exportSheet(type) {
-  let data, name;
-  if (type === 'validar') {
-    data = STATE.validResult.map(r => ({
-      'STATUS': r.status,
-      'NRO UC': r.uc,
-      'ORDEM DE SERVIÇO': r.os,
-      'TIPO DE NOTA': r.tipo,
-      'RECURSO': r.recurso,
-      'FIM DO SLA': r.sla,
-      'ESTÁ NO BD': r.inBD ? 'SIM' : 'NÃO',
-      'ESTÁ NO BI EXEC': r.inBI ? 'SIM' : 'NÃO',
-      'OBS': r.obs
-    }));
-    name = 'Validacao_de_notas.xlsx';
-  } else if (type === 'dash') {
-    // Exatamente como VBA: col A = UC (produtivas), col B = UC (falta gerar), col C = "UC (OS: XXXXX)"
-    const maxLen = Math.max(STATE.dashProd.length, STATE.dashFalta.length, STATE.dashDup.length, 1);
-    data = Array.from({length: maxLen}, (_, i) => ({
-      'NOTAS PRODUTIVAS - CANCELAR OFS': STATE.dashProd[i]  ? STATE.dashProd[i].uc              : '',
-      'FALTA GERAR'                    : STATE.dashFalta[i] ? STATE.dashFalta[i].uc             : '',
-      'UC DUPLICADA - CANCELAR'        : STATE.dashDup[i]   ? STATE.dashDup[i].label            : ''
-    }));
-    name = 'DASH_2.xlsx';
-  } else if (type === 'oport') {
-    // Exatamente como VBA: 4 colunas — Endereço, UC, Equipes Candidatas, STATUS
-    data = STATE.oportunidades.map(r => ({
-      'Endereço'           : r.endereco,
-      'UC'                 : r.uc,
-      'Equipes Candidatas' : r.equipes,
-      'STATUS'             : r.status
-    }));
-    name = 'Oportunidade_em_Rota.xlsx';
-  }
-  if (!data || !data.length) { alert('Nenhum dado para exportar. Execute o processamento primeiro.'); return; }
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, name.replace('.xlsx','').substring(0,31));
-  XLSX.writeFile(wb, name);
-}
-
-function exportAll() {
-  const wb = XLSX.utils.book_new();
-
-  // Sheet 1: Validação
-  const d1 = STATE.validResult.map(r => ({
-    'STATUS': r.status, 'NRO UC': r.uc, 'OS': r.os,
-    'TIPO': r.tipo, 'RECURSO': r.recurso, 'FIM SLA': r.sla,
-    'NO BD': r.inBD?'SIM':'NÃO', 'NO BI':r.inBI?'SIM':'NÃO', 'OBS': r.obs
-  }));
-  if (d1.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d1), 'Validação de notas');
-
-  // Sheet 2: DASH 2 — exatamente como VBA
-  const maxLen = Math.max(STATE.dashProd.length, STATE.dashFalta.length, STATE.dashDup.length, 1);
-  const d2 = Array.from({length:maxLen},(_,i)=>({
-    'NOTAS PRODUTIVAS - CANCELAR OFS': STATE.dashProd[i]  ? STATE.dashProd[i].uc    : '',
-    'FALTA GERAR'                    : STATE.dashFalta[i] ? STATE.dashFalta[i].uc   : '',
-    'UC DUPLICADA - CANCELAR'        : STATE.dashDup[i]   ? STATE.dashDup[i].label  : ''
-  }));
-  if (d2.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d2), 'DASH 2');
-
-  // Sheet 3: Oportunidade — 4 colunas exatamente como VBA
-  const d3 = STATE.oportunidades.map(r=>({
-    'Endereço'          : r.endereco,
-    'UC'                : r.uc,
-    'Equipes Candidatas': r.equipes,
-    'STATUS'            : r.status
-  }));
-  if (d3.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d3), 'OPORTUNIDADE EM ROTA');
-
-  if (wb.SheetNames.length === 0) { alert('Nenhum dado. Execute o processamento.'); return; }
-  XLSX.writeFile(wb, 'PlanejamentoSP_RESULTADO.xlsx');
-}
-
-// ═══════════════════════════════════════════
-//  DRAG & DROP
-// ═══════════════════════════════════════════
-document.querySelectorAll('.drop-zone').forEach(z => {
-  z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('dragover'); });
-  z.addEventListener('dragleave', () => z.classList.remove('dragover'));
-  z.addEventListener('drop', e => {
-    e.preventDefault();
-    z.classList.remove('dragover');
-    const inp = z.querySelector('input[type=file]');
-    if (inp && e.dataTransfer.files.length) {
-      const dt = new DataTransfer();
-      dt.items.add(e.dataTransfer.files[0]);
-      inp.files = dt.files;
-      inp.dispatchEvent(new Event('change'));
+      filterTable('dup');
     }
-  });
-});
-</script>
+
+    function renderOport() {
+      document.getElementById('so-count').textContent = STATE.oportunidades.length;
+      document.getElementById('so-end').textContent = new Set(STATE.oportunidades.map(r => r.endereco)).size;
+      const eqs = new Set(STATE.oportunidades.flatMap(r => r.equipes ? r.equipes.split('; ') : []));
+      document.getElementById('so-eq').textContent = eqs.size;
+      filterTable('oport');
+    }
+
+    // ═══════════════════════════════════════════
+    //  EXPORT
+    // ═══════════════════════════════════════════
+    function exportSheet(type) {
+      let data, name;
+      if (type === 'validar') {
+        data = STATE.validResult.map(r => ({
+          'STATUS': r.status,
+          'NRO UC': r.uc,
+          'ORDEM DE SERVIÇO': r.os,
+          'TIPO DE NOTA': r.tipo,
+          'RECURSO': r.recurso,
+          'FIM DO SLA': r.sla,
+          'ESTÁ NO BD': r.inBD ? 'SIM' : 'NÃO',
+          'ESTÁ NO BI EXEC': r.inBI ? 'SIM' : 'NÃO',
+          'OBS': r.obs
+        }));
+        name = 'Validacao_de_notas.xlsx';
+      } else if (type === 'dash') {
+        // Exatamente como VBA: col A = UC (produtivas), col B = UC (falta gerar), col C = "UC (OS: XXXXX)", col D = Retirar da programação
+        const maxLen = Math.max(STATE.dashProd.length, STATE.dashFalta.length, STATE.dashDup.length, STATE.dashRetirar.length, 1);
+        data = Array.from({ length: maxLen }, (_, i) => ({
+          'NOTAS PRODUTIVAS - CANCELAR OFS': STATE.dashProd[i] ? STATE.dashProd[i].uc : '',
+          'FALTA GERAR': STATE.dashFalta[i] ? STATE.dashFalta[i].uc : '',
+          'UC DUPLICADA - CANCELAR': STATE.dashDup[i] ? STATE.dashDup[i].label : '',
+          'RETIRAR DA PROGRAMACAO - CANCELAR': STATE.dashRetirar[i] ? `${STATE.dashRetirar[i].uc} (${STATE.dashRetirar[i].biStatus})` : ''
+        }));
+        name = 'DASH_2.xlsx';
+      } else if (type === 'oport') {
+        // Exatamente como VBA: 4 colunas — Endereço, UC, Equipes Candidatas, STATUS
+        data = STATE.oportunidades.map(r => ({
+          'Endereço': r.endereco,
+          'UC': r.uc,
+          'Equipes Candidatas': r.equipes,
+          'STATUS': r.status
+        }));
+        name = 'Oportunidade_em_Rota.xlsx';
+      }
+      if (!data || !data.length) { alert('Nenhum dado para exportar. Execute o processamento primeiro.'); return; }
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, name.replace('.xlsx', '').substring(0, 31));
+      XLSX.writeFile(wb, name);
+    }
+
+    function exportAll() {
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: Validação
+      const d1 = STATE.validResult.map(r => ({
+        'STATUS': r.status, 'NRO UC': r.uc, 'OS': r.os,
+        'TIPO': r.tipo, 'RECURSO': r.recurso, 'FIM SLA': r.sla,
+        'NO BD': r.inBD ? 'SIM' : 'NÃO', 'NO BI': r.inBI ? 'SIM' : 'NÃO', 'OBS': r.obs
+      }));
+      if (d1.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d1), 'Validação de notas');
+
+      // Sheet 2: DASH 2 — exatamente como VBA (4 colunas)
+      const maxLen = Math.max(STATE.dashProd.length, STATE.dashFalta.length, STATE.dashDup.length, STATE.dashRetirar.length, 1);
+      const d2 = Array.from({ length: maxLen }, (_, i) => ({
+        'NOTAS PRODUTIVAS - CANCELAR OFS': STATE.dashProd[i] ? STATE.dashProd[i].uc : '',
+        'FALTA GERAR': STATE.dashFalta[i] ? STATE.dashFalta[i].uc : '',
+        'UC DUPLICADA - CANCELAR': STATE.dashDup[i] ? STATE.dashDup[i].label : '',
+        'RETIRAR DA PROGRAMACAO - CANCELAR': STATE.dashRetirar[i] ? `${STATE.dashRetirar[i].uc} (${STATE.dashRetirar[i].biStatus})` : ''
+      }));
+      if (d2.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d2), 'DASH 2');
+
+      // Sheet 3: Oportunidade — 4 colunas exatamente como VBA
+      const d3 = STATE.oportunidades.map(r => ({
+        'Endereço': r.endereco,
+        'UC': r.uc,
+        'Equipes Candidatas': r.equipes,
+        'STATUS': r.status
+      }));
+      if (d3.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d3), 'OPORTUNIDADE EM ROTA');
+
+      if (wb.SheetNames.length === 0) { alert('Nenhum dado. Execute o processamento.'); return; }
+      XLSX.writeFile(wb, 'PlanejamentoSP_RESULTADO.xlsx');
+    }
+
+    // ═══════════════════════════════════════════
+    //  DRAG & DROP
+    // ═══════════════════════════════════════════
+    document.querySelectorAll('.drop-zone').forEach(z => {
+      z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('dragover'); });
+      z.addEventListener('dragleave', () => z.classList.remove('dragover'));
+      z.addEventListener('drop', e => {
+        e.preventDefault();
+        z.classList.remove('dragover');
+        const inp = z.querySelector('input[type=file]');
+        if (inp && e.dataTransfer.files.length) {
+          const dt = new DataTransfer();
+          dt.items.add(e.dataTransfer.files[0]);
+          inp.files = dt.files;
+          inp.dispatchEvent(new Event('change'));
+        }
+      });
+    });
+  </script>
 </body>
+
 </html>
